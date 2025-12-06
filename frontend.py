@@ -1,5 +1,5 @@
 import sys
-from game import Backend, Coordinates, SetSquareCommand, Token
+from game import Backend, Coordinates, SetSquareCommand
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel
 from PySide6.QtGui import QFont, QIntValidator
 from PySide6.QtCore import Qt
@@ -48,8 +48,8 @@ class SudokuBoard(QWidget):
         for row in range(9):
             for col in range(9):
                 token = self.backend.get_state().board[row][col]
-                if token.value is not None:
-                    self.cells[row][col].setText(str(token.value))
+                if token != 0:
+                    self.cells[row][col].setText(str(token))
                 else:
                     self.cells[row][col].setText("")
 
