@@ -134,6 +134,8 @@ class Backend:
         self.solve_random()
         self.state.board = self.remove_numbers(num_holes)
 
+    def generate_from_solved(self,  num_holes: int = 40):
+        self.state.board = self.remove_numbers(num_holes)
 
 
 class Validator:
@@ -144,41 +146,54 @@ class Validator:
     
     @staticmethod
     def row_valid(state: GameState, coords: Coordinates, digit: np.int8) -> bool:
-        for v in state.board[coords.x]:
-            if(v == digit):
+        row = state.board[coords.x]
+        for v in row:
+            if v == digit:
                 return False
         return True
     
     @staticmethod
     def column_valid(state: GameState, coords: Coordinates, digit: np.int8) -> bool:
-        for row in state.board:
-            if(row[coords.y] == digit):
+        for i in range(9):
+            if state.board[i, coords.y] == digit:
                 return False
         return True
-
+    
     @staticmethod
     def box_valid(state: GameState, coords: Coordinates, digit: np.int8) -> bool:
-        x_box = coords.x // 3
-        y_box = coords.y // 3
-        for x in range(x_box * 3, x_box * 3 + 3):
-            for y in range(y_box * 3, y_box * 3 + 3):
-                if (state.board[x][y] == digit):
-                    return False
+        x_start = (coords.x // 3) * 3
+        y_start = (coords.y // 3) * 3
+        
+        for i in range(3):
+            x = x_start + i
+            if (state.board[x, y_start] == digit or 
+                state.board[x, y_start + 1] == digit or 
+                state.board[x, y_start + 2] == digit):
+                return False
         return True
-
+    
     @staticmethod
     def is_valid_move(state: GameState, coords: Coordinates, digit: np.int8) -> bool:
-        if (not Validator.within_bounds(coords)):
+        if not (0 <= coords.x < 9 and 0 <= coords.y < 9):
             return False
         
-        if (not Validator.column_valid(state, coords, digit)):
-            return False
+        row = state.board[coords.x]
+        for v in row:
+            if v == digit:
+                return False
         
-        if (not Validator.row_valid(state, coords, digit)):
-            return False
+        for i in range(9):
+            if state.board[i, coords.y] == digit:
+                return False
         
-        if (not Validator.box_valid(state, coords, digit)):
-            return False
+        x_start = (coords.x // 3) * 3
+        y_start = (coords.y // 3) * 3
+        for i in range(3):
+            x = x_start + i
+            if (state.board[x, y_start] == digit or 
+                state.board[x, y_start + 1] == digit or 
+                state.board[x, y_start + 2] == digit):
+                return False
         
         return True
 

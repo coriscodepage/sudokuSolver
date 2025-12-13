@@ -1,1 +1,3 @@
 __pycache__/game.cpython-313.pyc
+*.h5
+*.keras

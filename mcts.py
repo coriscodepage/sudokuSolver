@@ -175,7 +175,7 @@ if __name__ == "__main__":
         [0,0,0,0,8,0,0,7,9],
     ]
     ba = Backend()
-    ba.generate_sudoku()
+    ba.generate_sudoku(20)
     puzzle = ba.get_state().board
     #cProfile.run('solve_with_mcts(puzzle)', sort='cumtime')
     solved_board, ok = solve_with_mcts(puzzle, iter_per_move=2000, max_moves=81)
