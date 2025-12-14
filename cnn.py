@@ -5,8 +5,8 @@ import keras.backend as K
 from keras.optimizers import Adam
 from keras.models import Sequential
 from keras.utils import Sequence
-from keras.layers import *
-import matplotlib.pyplot as plt
+import keras.layers as kl
+from keras.callbacks import Callback, ModelCheckpoint, ReduceLROnPlateau
 
 data = pd.read_csv("data.csv")
 try:
@@ -51,28 +51,27 @@ class DataGenerator(Sequence):
 
 model = Sequential()
 
-model.add(Conv2D(64, kernel_size=(3,3), activation='relu', padding='same', input_shape=(9,9,1)))
-model.add(BatchNormalization())
-model.add(Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'))
-model.add(BatchNormalization())
-model.add(Conv2D(128, kernel_size=(1,1), activation='relu', padding='same'))
+model.add(kl.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same', input_shape=(9,9,1)))
+model.add(kl.BatchNormalization())
+model.add(kl.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'))
+model.add(kl.BatchNormalization())
+model.add(kl.Conv2D(128, kernel_size=(1,1), activation='relu', padding='same'))
 
-model.add(Flatten())
-model.add(Dense(81*9))
-model.add(Reshape((-1, 9)))
-model.add(Activation('softmax'))
+model.add(kl.Flatten())
+model.add(kl.Dense(81*9))
+model.add(kl.Reshape((-1, 9)))
+model.add(kl.Activation('softmax'))
 
 adam = keras.optimizers.Adam(learning_rate=.001)
 model.compile(loss='sparse_categorical_crossentropy', optimizer=adam, metrics=['accuracy']) # type: ignore
 
 model.summary()
 
-train_idx = int(len(data)*0.90)
+train_idx = int(len(data)*0.95)
 data = data.sample(frac=1).reset_index(drop=True)
 training_generator = DataGenerator(data.iloc[:train_idx], subset = "train", batch_size=640)
 validation_generator = DataGenerator(data.iloc[train_idx:], subset = "train",  batch_size=640)
 
-from keras.callbacks import Callback, ModelCheckpoint, ReduceLROnPlateau
 filepath1="weights-improvement-{epoch:02d}-{val_accuracy:.2f}.keras"
 filepath2 = "best_weights.keras"
 checkpoint1 = ModelCheckpoint(filepath1, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
@@ -86,5 +85,5 @@ reduce_lr = ReduceLROnPlateau(
 )
 callbacks_list = [checkpoint1,checkpoint2,reduce_lr]
 
-history = model.fit(training_generator, validation_data = validation_generator, epochs = 1, verbose=1,callbacks=callbacks_list )
+history = model.fit(training_generator, validation_data = validation_generator, epochs = 1, verbose="1",callbacks=callbacks_list )
 

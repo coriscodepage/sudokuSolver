@@ -20,7 +20,7 @@ def create(num: int):
 def run():
     nt = 12
     with Pool(nt) as pool:
-        all_results = pool.map(create, [int(1e6 / nt)] * nt)
+        all_results = pool.map(create, [int(1e6 * 2 / nt)] * nt)
     
     flat = list(chain.from_iterable(all_results))
     questions, answers = zip(*flat)

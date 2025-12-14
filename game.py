@@ -44,6 +44,9 @@ class GameState:
                     if d not in used:
                         actions.append(Move(Coordinates(x, y), d))
         return actions
+    
+    def from_linear(self, array: NDArray[np.int8]):
+        self.board = array.reshape((9,9))
 
     @staticmethod
     def find_empty(board: NDArray[np.int8]) -> Optional[Coordinates]:
