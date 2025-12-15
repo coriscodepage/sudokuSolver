@@ -14,8 +14,16 @@ model = Sequential()
 
 model.add(kl.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same', input_shape=(9,9,1)))
 model.add(kl.BatchNormalization())
-model.add(kl.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'))
+
+model.add(kl.Conv2D(128, kernel_size=(3,3), activation='relu', padding='same'))
 model.add(kl.BatchNormalization())
+
+model.add(kl.Conv2D(128, kernel_size=(3,3), activation='relu', padding='same'))
+model.add(kl.BatchNormalization())
+
+model.add(kl.Conv2D(256, kernel_size=(3,3), activation='relu', padding='same'))
+model.add(kl.BatchNormalization())
+
 model.add(kl.Conv2D(128, kernel_size=(1,1), activation='relu', padding='same'))
 
 model.add(kl.Flatten())
@@ -23,8 +31,9 @@ model.add(kl.Dense(81*9))
 model.add(kl.Reshape((-1, 9)))
 model.add(kl.Activation('softmax'))
 
-adam = keras.optimizers.Adam(learning_rate=.001)
+adam = keras.optimizers.Adam(learning_rate=0.002)
 model.compile(loss='sparse_categorical_crossentropy', optimizer=adam, metrics=['accuracy']) # type: ignore
+
 
 model.load_weights('best_weights.keras')
 
@@ -81,7 +90,7 @@ def test_accuracy(feats, labels):
 
 def solve_sudoku():
     backend = Backend()
-    backend.generate_sudoku()
+    backend.generate_sudoku(50)
 
     game = backend.state.board.reshape((9,9,1))
     game = norm(game)
@@ -94,7 +103,7 @@ def solve_sudoku():
     frontend.backend.state = result
     print("Solution:")
     frontend.display_board()
-    print("Correct?: " + "yes" if result.check_solved() else "no")
+    print("Correct?: " + ("\033[0;32myes" if result.check_correct() else "\033[0;31mno"))
 
 
 game = solve_sudoku()

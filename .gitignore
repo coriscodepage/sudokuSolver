@@ -1,4 +1,7 @@
-__pycache__/game.cpython-313.pyc
+__pycache__
 *.h5
 *.keras
 *.csv
+gens/target/
+Cargo.lock
+gens/profile.json.gz

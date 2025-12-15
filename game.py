@@ -24,6 +24,18 @@ class GameState:
     def check_solved(self) -> bool:
         return all(self.board[x][y] != 0 for x in range(9) for y in range(9))
     
+    def check_correct(self) -> bool:
+        for x in range(9):
+            for y in range(9):
+                if self.board[x][y] == 0:
+                    return False
+                digit = self.board[x][y]
+                self.board[x][y] = 0
+                if not Validator.is_valid_move(self, Coordinates(x, y), digit):
+                    return False
+                self.board[x][y] = digit
+        return True
+
     def is_finished(self):
         return GameState.check_solved(self)
     
@@ -220,7 +232,9 @@ class Frontend:
     def display_board(self):
         state = self.backend.get_state()
         for row in state.board:
-            print(" | ".join(str(cell) if cell is not None else " " for cell in row))
+            print(" "*4, end="")
+            print(" | ".join(str(cell) if cell != 0 else " " for cell in row))
+            print(" "*4, end="")
             print("-" * (len(row) * 4 - 3))
 
 if __name__ == "__main__":
