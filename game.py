@@ -58,7 +58,7 @@ class GameState:
         return actions
     
     def from_linear(self, array: NDArray[np.int8]):
-        self.board = array.reshape((9,9))
+        self.board = array.reshape((9,9)).astype(np.int8)
 
     @staticmethod
     def find_empty(board: NDArray[np.int8]) -> Optional[Coordinates]:
@@ -68,23 +68,12 @@ class GameState:
                     return Coordinates(x, y)
         return None
 
-@dataclass
-class CommandResult:
-    status: bool
-    message: Optional[str]
-
-
 class Backend:
     def __init__(self):
         self.state: GameState = GameState()
 
-    def set_square(self, coords: Coordinates, digit: np.int8):
-        self.state.board[coords.x][coords.y] = digit
-
     def get_state(self) -> GameState:
         return self.state
-    
-
 
     def solve_random(self):
         empty = GameState.find_empty(self.state.board)
@@ -214,16 +203,14 @@ class Validator:
 
 
 class SetSquareCommand:
-    def __init__(self, backend: Backend, coords: Coordinates, digit: np.int8):
+    def __init__(self, state: GameState, coords: Coordinates, digit: np.int8):
         self.coords = coords
         self.digit = digit
-        self.backend = backend
-
-    def execute(self) -> CommandResult:
-        if not Validator.is_valid_move(self.backend.get_state(), self.coords, self.digit):
-            return CommandResult(status=False, message="Invalid move")
-        self.backend.set_square(self.coords, self.digit)
-        return CommandResult(status=True, message=None)
+        self.state = state
+        self.valid: bool = False
+        self.state.board[self.coords.x][self.coords.y] = 0
+        if Validator.is_valid_move(self.state, self.coords, self.digit):
+            self.valid = True
 
 class Frontend:
     def __init__(self, backend: Backend):

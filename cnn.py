@@ -8,7 +8,7 @@ from keras.utils import Sequence
 import keras.layers as kl
 from keras.callbacks import Callback, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 
-data = pd.read_csv("data_rust4.csv")
+data = pd.read_csv("data_rust5.csv")
 try:
     data = pd.DataFrame({"quizzes":data["puzzle"],"solutions":data["solution"]})
     #data = data.head(int(1e6 * 0.5))
@@ -50,7 +50,7 @@ class DataGenerator(Sequence):
         if self.subset == 'train': return X, y
         else: return X
 
-LOAD_EXISTING_MODEL = False
+LOAD_EXISTING_MODEL = True
 MODEL_PATH = "best_weights.keras"
 
 model = None
@@ -89,7 +89,7 @@ if not LOAD_EXISTING_MODEL:
     model.add(kl.Reshape((-1, 9)))
     model.add(kl.Activation('softmax'))
     
-    adam = keras.optimizers.Adam(learning_rate=0.001)
+    adam = keras.optimizers.Adam(learning_rate=0.002)
     model.compile(loss='sparse_categorical_crossentropy', optimizer=adam, metrics=['accuracy']) # type: ignore
 
 model.summary() # type: ignore

@@ -200,12 +200,28 @@ impl Generate {
     
 }
 
+#[allow(dead_code)]
 fn display_board(puzzle: &Puzzle) {
     let board = puzzle.board;
     for row in board {
         println!("{:?}", row)
     }
 }
+
+#[allow(dead_code)]
+fn generate_puzzle(count: usize) -> Vec<Pair> {
+    (0..count)
+        .into_par_iter()
+        .map(|_| {
+            let mut puzzle = Puzzle::new();
+            Generate::solve_random(&mut puzzle);
+            let solution = puzzle;
+            Generate::remove_numbers(&mut puzzle, 60);
+            Pair::new(puzzle, solution)
+        })
+        .collect()
+}
+
 
 fn generate_puzzles(count: usize) -> Vec<Pair> {
     let mut results: Vec<Pair> = (0..(count as f32 *0.4) as usize)
@@ -247,39 +263,11 @@ fn generate_puzzles(count: usize) -> Vec<Pair> {
 }
 
 fn main() {
-    /*const NT: usize = 12;
-    let mut threads = vec![];
-    for _ in 0..NT {
-        threads.push(thread::spawn(move || {
-            let num_iters = 1e4 as usize / NT;
-            let mut results = Vec::with_capacity(num_iters);
-            for _ in 0..num_iters {
-                let mut puzzle = Puzzle::new();
-                Generate::solve_random(&mut puzzle);
-                let solution = puzzle;
-                Generate::remove_numbers(&mut puzzle, 40);
-                results.push(Pair::new(puzzle, solution));
-            }
-            results
-        }));
-    }
-    let mut all_results = vec![];
-    for thread in threads {
-        all_results.append(&mut thread.join().unwrap()); 
-    }*/
-    /*let mut puzzle = Puzzle::new();
-    Generate::solve_random(&mut puzzle);
-    display_board(&puzzle);
-    println!();
-    Generate::remove_numbers(&mut puzzle, 65);
-    display_board(&puzzle);*/
-    let all_results = generate_puzzles((1e6 / 2f32) as usize );
-    //println!("{:?}", all_results);
-    let file = File::create("data_rust3.csv").unwrap();
+    let all_results = generate_puzzles(1e6 as usize * 5);
+    let file = File::create("data_rust.csv").unwrap();
     let mut file = BufWriter::new(file);
     writeln!(file, "puzzle,solution").unwrap();
     for pair in all_results {
         writeln!(file, "{},{}", pair.question, pair.answer).unwrap();
     }
-    //println!("{:?}", all_results);
 }

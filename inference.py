@@ -1,110 +1,95 @@
+import copy
+from typing import Optional
 import numpy as np
 import pandas as pd
 import keras
-import keras.backend as K
 from keras.optimizers import Adam
 from keras.models import Sequential
-from keras.utils import Sequence
 import keras.layers as kl
 from numpy.typing import NDArray
 
-from game import Backend, Frontend, GameState
+from game import Backend, Coordinates, Frontend, GameState, SetSquareCommand
 
-model = Sequential()
-
-model.add(kl.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same', input_shape=(9,9,1)))
-model.add(kl.BatchNormalization())
-
-model.add(kl.Conv2D(128, kernel_size=(3,3), activation='relu', padding='same'))
-model.add(kl.BatchNormalization())
-
-model.add(kl.Conv2D(128, kernel_size=(3,3), activation='relu', padding='same'))
-model.add(kl.BatchNormalization())
-
-model.add(kl.Conv2D(256, kernel_size=(3,3), activation='relu', padding='same'))
-model.add(kl.BatchNormalization())
-
-model.add(kl.Conv2D(128, kernel_size=(1,1), activation='relu', padding='same'))
-
-model.add(kl.Flatten())
-model.add(kl.Dense(81*9))
-model.add(kl.Reshape((-1, 9)))
-model.add(kl.Activation('softmax'))
-
-adam = keras.optimizers.Adam(learning_rate=0.002)
-model.compile(loss='sparse_categorical_crossentropy', optimizer=adam, metrics=['accuracy']) # type: ignore
+MODEL_PATH = "best_weights.keras"
 
 
-model.load_weights('best_weights.keras')
 
-def norm(a):
-    return (a/9)-.5
+class Infer:
+    def __init__(self, model: Sequential) -> None:
+        self.model: Sequential = model
 
-def denorm(a):
-    return (a+.5)*9
+    @staticmethod
+    def norm(a):
+        return (a/9)-.5
 
-def inference_sudoku(sample):
-    
-    feat = sample
-    pred = None
-    
-    while(1):
-    
-        out = model.predict(feat.reshape((1,9,9,1)))  
-        out = out.squeeze()
+    @staticmethod
+    def denorm(a):
+        return (a+.5)*9
 
-        pred = np.argmax(out, axis=1).reshape((9,9))+1 
-        prob = np.around(np.max(out, axis=1).reshape((9,9)), 2) 
+    def generate_steps(self, puzzle: GameState) -> tuple[GameState, list[SetSquareCommand]]:
+        puzzle = copy.copy(puzzle)
+        history: list[SetSquareCommand] = []
+        feat = Infer.norm(puzzle.board.reshape((9,9,1)))
+        pred: NDArray = np.zeros((9, 9), dtype=np.int8)
+
+        while(1):
         
-        feat = denorm(feat).reshape((9,9))
-        mask = (feat==0)
-     
-        if(mask.sum()==0):
-            break
-            
-        prob_new = prob*mask
-    
-        ind = np.argmax(prob_new)
-        x, y = (ind//9), (ind%9)
+            out = self.model.predict(feat.reshape((1,9,9,1)))  
+            out = out.squeeze()
 
-        val = pred[x][y]
-        feat[x][y] = val
-        feat = norm(feat)
-    
-    return pred
+            pred = np.argmax(out, axis=1).reshape((9,9))+1 
+            prob = np.around(np.max(out, axis=1).reshape((9,9)), 2) 
 
-def test_accuracy(feats, labels):
-    
-    correct = 0
-    
-    for i,feat in enumerate(feats):
-        
-        pred = inference_sudoku(feat)
-        
-        true = labels[i].reshape((9,9))+1
-        
-        if(abs(true - pred).sum()==0):
-            correct += 1
-        
-    print(correct/feats.shape[0])
+            feat = Infer.denorm(feat).reshape((9,9))
+            mask = (feat==0)
+
+            if(mask.sum()==0):
+                break
+
+            prob_new = prob*mask
+
+            ind = np.argmax(prob_new)
+            x, y = int(ind//9), int(ind%9)
+
+            val = pred[x][y]
+            feat[x][y] = val
+            puzzle.from_linear(feat)
+            history.append(SetSquareCommand(puzzle, Coordinates(x, y), np.int8(val)))
+            feat = Infer.norm(feat)
+
+        result = GameState()
+        result.from_linear(pred)
+        return (result, history)
+
+    # def test_accuracy(feats, labels):
+
+    #     correct = 0
+
+    #     for i,feat in enumerate(feats):
+
+    #         pred = inference_sudoku(feat)
+
+    #         true = labels[i].reshape((9,9))+1
+
+    #         if(abs(true - pred).sum()==0):
+    #             correct += 1
+
+    #     print(correct/feats.shape[0])
 
 def solve_sudoku():
+    model = keras.models.load_model(MODEL_PATH)
+    inferance = Infer(model) # type: ignore
     backend = Backend()
-    backend.generate_sudoku(50)
-
-    game = backend.state.board.reshape((9,9,1))
-    game = norm(game)
-    game = inference_sudoku(game)
+    backend.generate_sudoku(60)
+    result, _ = inferance.generate_steps(backend.get_state())
     frontend = Frontend(backend)
     print("Puzzle:")
     frontend.display_board()
-    result = GameState()
-    result.from_linear(game) # type: ignore
     frontend.backend.state = result
     print("Solution:")
     frontend.display_board()
     print("Correct?: " + ("\033[0;32myes" if result.check_correct() else "\033[0;31mno"))
 
-
-game = solve_sudoku()
+if __name__ == "__main__":
+    solve_sudoku()
 
