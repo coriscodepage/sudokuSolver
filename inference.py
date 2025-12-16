@@ -26,7 +26,7 @@ class Infer:
     def denorm(a):
         return (a+.5)*9
 
-    def generate_steps(self, puzzle: GameState) -> tuple[GameState, list[SetSquareCommand]]:
+    def generate_steps(self, puzzle: GameState, solved: Optional[GameState] = None) -> tuple[GameState, list[SetSquareCommand]]:
         puzzle = copy.copy(puzzle)
         history: list[SetSquareCommand] = []
         feat = Infer.norm(puzzle.board.reshape((9,9,1)))
@@ -53,8 +53,8 @@ class Infer:
 
             val = pred[x][y]
             feat[x][y] = val
-            puzzle.from_linear(feat)
-            history.append(SetSquareCommand(puzzle, Coordinates(x, y), np.int8(val)))
+            if solved:
+                history.append(SetSquareCommand(solved, Coordinates(x, y), np.int8(val)))
             feat = Infer.norm(feat)
 
         result = GameState()
@@ -78,10 +78,10 @@ class Infer:
 
 def solve_sudoku():
     model = keras.models.load_model(MODEL_PATH)
-    inferance = Infer(model) # type: ignore
+    inference = Infer(model) # type: ignore
     backend = Backend()
-    backend.generate_sudoku(60)
-    result, _ = inferance.generate_steps(backend.get_state())
+    backend.generate_sudoku(73)
+    result, _ = inference.generate_steps(backend.get_state(), backend.get_solved())
     frontend = Frontend(backend)
     print("Puzzle:")
     frontend.display_board()

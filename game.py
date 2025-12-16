@@ -71,6 +71,7 @@ class GameState:
 class Backend:
     def __init__(self):
         self.state: GameState = GameState()
+        self.solved: GameState = GameState()
 
     def get_state(self) -> GameState:
         return self.state
@@ -91,31 +92,35 @@ class Backend:
                 self.state.board[empty.x][empty.y] = 0
         return False
 
-    def count_solutions(self):
-        board = copy.deepcopy(self.state.board)
+    def count_solutions(self, board: NDArray[np.int8]):
+        board = board.copy()
         solutions = 0
-    
+        
+        temp_state = GameState()
+
         def backtrack():
-            nonlocal solutions
+            nonlocal solutions, temp_state
             if solutions > 1:
                 return
-    
+
             empty = GameState.find_empty(board)
             if not empty:
                 solutions += 1
                 return
-    
+
+            temp_state.board = board
             for n in np.arange(1, 10):
-                if Validator.is_valid_move(self.state, empty, n):
+
+                if Validator.is_valid_move(temp_state, empty, n):
                     board[empty.x][empty.y] = n
                     backtrack()
                     board[empty.x][empty.y] = 0
-    
+
         backtrack()
-        return solutions    
+        return solutions
 
     def remove_numbers(self, num_holes: int = 40):
-        board = copy.deepcopy(self.state.board)
+        board = self.state.board.copy()
         coords = [(r, c) for r in range(9) for c in range(9)]
         random.shuffle(coords)
 
@@ -127,7 +132,7 @@ class Backend:
             backup = board[r][c]
             board[r][c] = 0
 
-            if self.count_solutions() != 1:
+            if self.count_solutions(board) != 1:
                 board[r][c] = backup
             else:
                 holes += 1
@@ -136,11 +141,14 @@ class Backend:
     
     def generate_sudoku(self, num_holes: int = 40):
         self.solve_random()
+        self.solved.board = self.state.board.copy()
         self.state.board = self.remove_numbers(num_holes)
 
     def generate_from_solved(self,  num_holes: int = 40):
         self.state.board = self.remove_numbers(num_holes)
 
+    def get_solved(self) -> GameState:
+        return self.solved
 
 class Validator:
     
@@ -203,14 +211,11 @@ class Validator:
 
 
 class SetSquareCommand:
-    def __init__(self, state: GameState, coords: Coordinates, digit: np.int8):
+    def __init__(self, solved: GameState, coords: Coordinates, digit: np.int8):
         self.coords = coords
         self.digit = digit
-        self.state = state
-        self.valid: bool = False
-        self.state.board[self.coords.x][self.coords.y] = 0
-        if Validator.is_valid_move(self.state, self.coords, self.digit):
-            self.valid = True
+        self.solved = solved
+        self.valid: bool = (self.solved.board[self.coords.x][self.coords.y] == digit)
 
 class Frontend:
     def __init__(self, backend: Backend):
@@ -228,4 +233,5 @@ if __name__ == "__main__":
     backend = Backend()
     frontend = Frontend(backend)
     backend.solve_random()
+    backend.generate_sudoku(60)
     frontend.display_board()

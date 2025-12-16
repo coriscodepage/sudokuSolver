@@ -116,7 +116,7 @@ class SudokuBoard(QWidget):
         if not self.solved:
             self.status_label.setText("Generating solution...")
             QApplication.processEvents()
-            result, self.history = self.infer.generate_steps(self.backend.get_state())
+            result, self.history = self.infer.generate_steps(self.backend.get_state(), self.backend.get_solved())
             self.status_label.setText("Correct?: " + ("yes" if result.check_correct() else "no"))
             self.solved = True
 
@@ -142,9 +142,11 @@ class SudokuBoard(QWidget):
         self.history = []
         self.index = 0
         self.solved = False
-        self.status_label.setText("Sudoku not solved")
+        self.status_label.setText("Generating sudoku")
+        QApplication.processEvents()
         difficulty = int(self.difficulty_input.text())
         self.backend.generate_sudoku(difficulty)
+        self.status_label.setText("Sudoku not solved")
         self.display_board()        
 
     def display_step(self):
